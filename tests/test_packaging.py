@@ -30,3 +30,13 @@ def test_plugin_manifest_has_repository_and_license():
     assert manifest["license"] == "AGPL-3.0-only"
     assert manifest["repo_url"] == "https://github.com/mildman1848/kodiboxarr"
     assert manifest["help_url"].startswith(manifest["repo_url"])
+
+
+def test_resolver_url_diagnostics_never_include_signed_path_or_query():
+    from resolver import safe_url_host
+
+    url = "https://cdn.example.invalid/live/channel.m3u8?token=private-signature"
+    host = safe_url_host(url)
+    assert host == "cdn.example.invalid"
+    assert "private-signature" not in host
+    assert "/live/" not in host

@@ -1,6 +1,6 @@
 {
   "name": "Kodiboxarr",
-  "version": "0.1.0-dev",
+  "version": "0.1.0",
   "description": "Kodibox TV / Vavoo source support for Dispatcharr. Watches Kodibox builds, imports playlist and EPG metadata, and prepares runtime-resolved stream placeholders.",
   "author": "Mildman1848 + Hermes Agent",
   "license": "AGPL-3.0-only",
@@ -14,13 +14,7 @@
       "default": "https://raw.githubusercontent.com/kodibox32/kodibox/refs/heads/master/builds64.xml",
       "help_text": "Kodibox Wizard build manifest."
     },
-    {
-      "id": "groups",
-      "label": "Groups to import",
-      "type": "string",
-      "default": "Germany",
-      "help_text": "Comma-separated groups for future Vavoo catalog mapping."
-    },
+
     {
       "id": "refresh_hours",
       "label": "Refresh every (hours)",
@@ -38,13 +32,7 @@
       "max": 100,
       "help_text": "Stop sync if more channels vanish."
     },
-    {
-      "id": "fallback_profile",
-      "label": "Fallback stream profile",
-      "type": "string",
-      "default": "ffmpeg",
-      "help_text": "Future resolver fallback profile."
-    },
+
     {
       "id": "channel_start_number",
       "label": "Channel import start number",
@@ -101,7 +89,7 @@
     {
       "id": "assign_profile",
       "label": "Assign stream profile",
-      "description": "Future action: assign Kodiboxarr stream profile.",
+      "description": "Assign the Kodiboxarr stream profile to imported streams and linked Channels.",
       "button_label": "Assign",
       "button_variant": "light",
       "events": [

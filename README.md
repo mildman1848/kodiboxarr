@@ -8,6 +8,7 @@ Kodiboxarr is a Dispatcharr plugin that tracks Kodibox builds, imports playlist/
 - **Dispatcharr:** [Dispatcharr/dispatcharr](https://github.com/Dispatcharr/Dispatcharr) — host application and plugin integration.
 - **Vavoo/MediaHubMX:** external service endpoints are used by the resolver. This project is independent and is not affiliated with or endorsed by those services.
 - **EPGForgearr:** [mildman1848/epgforgearr](https://github.com/mildman1848/epgforgearr) — separate supplemental XMLTV plugin.
+- **Stalker / MAG portals:** [PiloUnk/distalker](https://github.com/PiloUnk/distalker) is a separate Dispatcharr plugin for Stalker portals. Install and configure it separately; Kodiboxarr does not duplicate or vendor its portal client. Distalker documents that portal credentials are stored in its own state files, so review its security notes before configuring a portal.
 
 This repository contains the Kodiboxarr plugin implementation maintained by Mildman1848. It is not a mirror or redistribution of the Kodibox project. Kodibox assets and source archives remain subject to their respective owners' terms.
 

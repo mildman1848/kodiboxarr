@@ -41,6 +41,11 @@ def log(message: str) -> None:
     print(f"[kodiboxarr] {message}", file=sys.stderr, flush=True)
 
 
+def safe_url_host(url: str) -> str:
+    """Return only a URL host for diagnostics; never log signed paths or queries."""
+    return urlparse(url).hostname or "unknown-host"
+
+
 def is_ours(url: str) -> bool:
     parsed = urlparse(url)
     return parsed.netloc == PSEUDO_HOST
@@ -308,7 +313,7 @@ def resolve_pseudo_url(url: str) -> str:
         raise ValueError(f"unsupported provider: {payload.get('provider')}")
     candidates = list_vavoo_candidates(payload)
     name = payload.get("name") or payload.get("kodibox_name")
-    log(f"matched {name} -> {len(candidates)} candidate(s), primary {candidates[0]}")
+    log(f"matched {name} -> {len(candidates)} candidate(s), primary host {safe_url_host(candidates[0])}")
     last_error: Exception | None = None
     for index, vavoo_url in enumerate(candidates):
         try:
@@ -317,12 +322,12 @@ def resolve_pseudo_url(url: str) -> str:
                 if index:
                     log(f"primary source unhealthy; using candidate #{index + 1} for {name}")
                 return resolved
-            log(f"candidate #{index + 1} resolved but failed probe: {resolved[:80]}")
-            last_error = RuntimeError(f"probe failed for {resolved[:80]}")
+            log(f"candidate #{index + 1} resolved but failed probe at host {safe_url_host(resolved)}")
+            last_error = RuntimeError("resolved URL probe failed")
         except Exception as exc:  # noqa: BLE001 - try next candidate on any failure
-            log(f"candidate #{index + 1} failed for {name}: {type(exc).__name__}: {exc}")
+            log(f"candidate #{index + 1} failed for {name}: {type(exc).__name__}")
             last_error = exc
-    raise RuntimeError(f"all {len(candidates)} candidates failed for {name}: {last_error}")
+    raise RuntimeError(f"all {len(candidates)} candidates failed for {name}: {type(last_error).__name__ if last_error else 'unknown error'}")
 
 
 def _ffmpeg_command(url: str, user_agent: str) -> list[str]:
@@ -422,7 +427,7 @@ def stream_resolved_url(url: str, user_agent: str) -> tuple[int, int, str]:
 def passthrough_vavoo_payload(payload: dict, user_agent: str) -> int:
     candidates = list_vavoo_candidates(payload)
     name = payload.get("name") or payload.get("kodibox_name")
-    log(f"matched {name} -> {len(candidates)} candidate(s), primary {candidates[0]}")
+    log(f"matched {name} -> {len(candidates)} candidate(s), primary host {safe_url_host(candidates[0])}")
     last_error: Exception | None = None
     for index, vavoo_url in enumerate(candidates):
         try:
@@ -444,9 +449,9 @@ def passthrough_vavoo_payload(payload: dict, user_agent: str) -> int:
             else:
                 log(f"candidate #{index + 1} produced no data rc={rc} reason={reason}; trying next mirror")
         except Exception as exc:  # noqa: BLE001 - try next candidate on any failure
-            log(f"candidate #{index + 1} failed for {name}: {type(exc).__name__}: {exc}")
+            log(f"candidate #{index + 1} failed for {name}: {type(exc).__name__}")
             last_error = exc
-    raise RuntimeError(f"all {len(candidates)} candidates failed for {name}: {last_error}")
+    raise RuntimeError(f"all {len(candidates)} candidates failed for {name}: {type(last_error).__name__ if last_error else 'unknown error'}")
 
 
 def main(argv: list[str]) -> int:
@@ -472,7 +477,7 @@ def main(argv: list[str]) -> int:
             return 0
         return passthrough_vavoo_payload(payload, user_agent)
     except Exception as exc:
-        log(f"resolve failed: {type(exc).__name__}: {exc}")
+        log(f"resolve failed: {type(exc).__name__}")
         return 1
 
 

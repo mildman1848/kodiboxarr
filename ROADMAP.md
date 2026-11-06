@@ -32,17 +32,18 @@ Tracking: [#7](https://github.com/mildman1848/kodiboxarr/issues/7)
   deduplication decisions, and rejected records.
 - Keep the existing Kodi playlist import behavior compatible.
 
-### 2. Stalker provider adapter — Next
+### 2. StalkerTV via Distalker — Next
 
 Tracking: [#8](https://github.com/mildman1848/kodiboxarr/issues/8)
 
-- Discover and validate Stalker portal/channel data through a separate adapter;
-  the current build does not contain a ready-to-import Stalker channel cache.
-- Handle portal authentication and short-lived playback URLs without exposing
-  credentials or signed URLs in settings output, logs, fixtures, or issues.
-- Normalize discovered streams into the same provider-tagged candidate contract.
-- Include bounded requests, timeouts, clear failure states, and fixture-based
-  tests; no live portal dependency in the test suite.
+- Document Distalker as the external Stalker/MAG portal plugin; Kodiboxarr does
+  not implement or vendor a second portal client.
+- Describe how Distalker-generated M3U streams can coexist with Kodiboxarr and
+  be linked by the user to an existing Channel in Dispatcharr.
+- Verify/document stream-profile assignment and current compatibility boundaries
+  for using Distalker streams as ordered alternatives on a Channel.
+- Link to Distalker's own releases, license, credential handling, and update
+  notes; keep Distalker code and portal credentials outside this repository.
 
 ### 3. Multi-source Channels and native failover — Next
 
@@ -70,10 +71,8 @@ Tracking: [#10](https://github.com/mildman1848/kodiboxarr/issues/10)
 - Add regression tests for HTTP errors, timeouts, malformed responses, expired
   URLs, and failover exhaustion.
 
-### 5. Release and operational verification — Next
+### 5. Initial release and operational verification — Done (v0.1.0)
 
-- Update plugin settings/action descriptions and docs to match implemented
-  behavior (remove stale "future" labels only when the feature is real).
-- Run unit tests, lint/validation, plugin ZIP build, and GitHub Actions.
-- Validate against a controlled Dispatcharr test Channel before any production
-  deployment; deployment and live imports require separate explicit approval.
+- Stable plugin ZIP is built from the release tag and published with `SHA256SUMS`.
+- Unit tests, CI lint, plugin ZIP build, and GitHub Actions pass for the release commit.
+- Production installation/playback validation remains a separate explicit operation.
