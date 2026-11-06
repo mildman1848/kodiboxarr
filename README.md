@@ -35,6 +35,10 @@ python3 scripts/build_plugin_zip.py
 
 The ZIP builder includes only runtime plugin files. It excludes tests, Git metadata, Python bytecode, local state, signatures, and downloaded Kodibox build data.
 
+### Vavoo catalog preview
+
+The KodiboxTV build stores its Vavoo cache as zlib-compressed JSON at `userdata/addon_data/plugin.video.kodiboxtv/cache/vav_channels`. The verified envelope is `value.channels`; each channel record has `name`, `group`, and a playback `url`. Kodiboxarr discards that URL, derives a stable opaque candidate identity from normalized name + group, deduplicates within the provider/group, and reports group counts with a bounded sample. Run the ordinary dry-run sync first to prepare the current build cache, then use **Vavoo catalog preview**. The action does not create Dispatcharr Channels or write stream/EPG data. Candidate-to-M3U import and live resolution are still in progress; regional variants remain separate by group.
+
 ## Security and privacy
 
 - Do not commit downloaded build archives, extracted provider caches, signed stream URLs, MediaHubMX signatures, or Dispatcharr data.

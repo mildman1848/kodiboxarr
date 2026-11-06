@@ -2,17 +2,23 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict
 
 try:
     from .kodiboxarr.build_source import DEFAULT_MANIFEST_URL, fetch_manifest, parse_manifest
+    from .kodiboxarr.catalog import preview_cache
     from .kodiboxarr.sync import build_channel_plan, delete_auto_channels, generate_mapping_report, sync_to_dispatcharr
+    from .kodiboxarr.vavoo_cache import KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH
 except ImportError:  # Standalone test import, outside Dispatcharr's package loader.
     from kodiboxarr.build_source import DEFAULT_MANIFEST_URL, fetch_manifest, parse_manifest
+    from kodiboxarr.catalog import preview_cache
     from kodiboxarr.sync import build_channel_plan, delete_auto_channels, generate_mapping_report, sync_to_dispatcharr
+    from kodiboxarr.vavoo_cache import KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH
 
 _MANIFEST_PATH = Path(__file__).with_name("plugin.json")
+VAVOO_CACHE_PATH = Path(os.environ.get("KODIBOXARR_DATA_DIR", "/data/kodiboxarr")) / "extracted/buildzip" / KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH
 MANIFEST = json.loads(_MANIFEST_PATH.read_text(encoding="utf-8"))
 
 
@@ -30,6 +36,14 @@ class Plugin:
         logger = context.get("logger") or logging.getLogger(__name__)
         settings = _merge_defaults(_settings_from_context_and_params(context, params))
         try:
+            if action == "dry_run_vavoo_catalog":
+                if not VAVOO_CACHE_PATH.is_file():
+                    return {"status": "error", "message": "KodiboxTV Vavoo cache is not available; run Dry-run sync first."}
+                try:
+                    return {"status": "ok", **preview_cache(VAVOO_CACHE_PATH)}
+                except Exception as exc:
+                    logger.warning("kodiboxarr: Vavoo catalog preview failed (%s)", type(exc).__name__)
+                    return {"status": "error", "message": "Could not read the KodiboxTV Vavoo cache."}
             if action == "check_build":
                 return self._check_build(settings)
             if action == "dry_run_sync":

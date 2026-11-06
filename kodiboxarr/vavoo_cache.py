@@ -5,6 +5,8 @@ import zlib
 from pathlib import Path
 from typing import Any, Dict
 
+KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH = "userdata/addon_data/plugin.video.kodiboxtv/cache/vav_channels"
+
 
 class VavooCacheError(RuntimeError):
     """Raised when Kodibox's cached Vavoo data cannot be decoded."""

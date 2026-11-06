@@ -1,8 +1,8 @@
 {
   "name": "Kodiboxarr",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Kodibox TV / Vavoo source support for Dispatcharr. Watches Kodibox builds, imports playlist and EPG metadata, and prepares runtime-resolved stream placeholders.",
-  "author": "Mildman1848 + Hermes Agent",
+  "author": "Mildman1848",
   "license": "AGPL-3.0-only",
   "repo_url": "https://github.com/mildman1848/kodiboxarr",
   "help_url": "https://github.com/mildman1848/kodiboxarr#readme",
@@ -70,6 +70,13 @@
       "label": "1. Check Kodibox build",
       "description": "Read manifest and report build metadata.",
       "button_label": "Check",
+      "button_variant": "light"
+    },
+    {
+      "id": "dry_run_vavoo_catalog",
+      "label": "Vavoo catalog preview",
+      "description": "Preview KodiboxTV Vavoo candidates, groups and duplicate counts without writing Dispatcharr data or exposing playback URLs. Run Dry-run sync first to prepare the build cache.",
+      "button_label": "Preview Vavoo",
       "button_variant": "light"
     },
     {

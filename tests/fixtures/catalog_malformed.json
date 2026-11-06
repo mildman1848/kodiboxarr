@@ -1,0 +1,5 @@
+[
+  {"name": "Usable", "identity": "ok"},
+  {"name": "   ", "group": "News", "identity": "blank"},
+  {"name": 42, "group": "News", "identity": "bad"}
+]

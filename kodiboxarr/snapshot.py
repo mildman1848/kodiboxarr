@@ -6,14 +6,14 @@ from .build_source import addon_version, parse_manifest, sha256_file
 from .epg import parse_pvr_settings_file
 from .models import Snapshot
 from .playlist import parse_m3u_file
-from .vavoo_cache import cache_summary
+from .vavoo_cache import KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH, cache_summary
 
 
 def build_snapshot(build_root: Path, build_zip: Path, manifest_xml: str, manifest_url: str = "") -> Snapshot:
     build_root = Path(build_root)
     playlist_path = build_root / "userdata/addon_data/pvr.iptvsimple/providers/playlist.m3u"
     pvr_settings = build_root / "userdata/addon_data/pvr.iptvsimple/instance-settings-1.xml"
-    vavoo_cache = build_root / "userdata/addon_data/plugin.video.kodiboxtv/cache/vav_channels"
+    vavoo_cache = build_root / KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH
     entries = parse_m3u_file(playlist_path)
     epg = parse_pvr_settings_file(pvr_settings)
     vavoo = cache_summary(vavoo_cache) if vavoo_cache.exists() else {"hash": "", "channels": 0}

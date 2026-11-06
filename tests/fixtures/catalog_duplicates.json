@@ -1,0 +1,5 @@
+[
+  {"name": "News HD", "group": "News", "identity": " Channel-1 "},
+  {"name": "News HD regional", "group": "Regional", "identity": "channel-1"},
+  {"name": "News HD", "group": "Other", "identity": "CHANNEL-1"}
+]

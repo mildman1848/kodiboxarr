@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 — 2026-11-06
+
+- Corrected the displayed plugin author to `Mildman1848` only.
+- Added a bounded, URL-free preview of the KodiboxTV Vavoo catalogue cache.
+
 ## 0.1.0 — 2026-11-06
 
 - Initial stable release of the Kodiboxarr Dispatcharr plugin.

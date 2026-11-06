@@ -1,0 +1,11 @@
+{
+  "value": {
+    "hash": "synthetic-cache-hash",
+    "channels": [
+      {"name": "World News", "group": "News", "url": "fixture-url-one"},
+      {"name": " world  news ", "group": "news", "url": "fixture-url-two"},
+      {"name": "World News", "group": "Regional", "url": "fixture-url-three"},
+      {"name": null, "group": "Malformed", "url": "fixture-url-four"}
+    ]
+  }
+}

@@ -20,17 +20,14 @@ and which ordered streams are linked to each Channel.
 Status: **Next** — planned; **In progress** — implementation underway;
 **Done** — implemented and verified.
 
-### 1. Provider inventory and Vavoo catalog import — Next
+### 1. Provider inventory and Vavoo catalog import — In progress
 
 Tracking: [#7](https://github.com/mildman1848/kodiboxarr/issues/7)
 
-- Document the KodiboxTV build's playlist, Vavoo catalogue, and Stalker-related
-  data sources, formats, update behavior, and licensing/access assumptions.
-- Add Vavoo catalogue entries as provider-tagged stream candidates without
-  creating Channels or blindly importing every regional/duplicate variant.
-- Provide a read-only/dry-run preview with counts, normalized names, groups,
-  deduplication decisions, and rejected records.
-- Keep the existing Kodi playlist import behavior compatible.
+- Verified the shipped cache envelope and added a URL-free, read-only preview for
+  provider/group candidate counts and duplicates.
+- Remaining: integrate candidates into the M3U without Channel side effects, then
+  test stable refresh and runtime resolution on fixtures.
 
 ### 2. StalkerTV via Distalker — Next
 
