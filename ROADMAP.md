@@ -1,0 +1,79 @@
+# Kodiboxarr Roadmap
+
+Kodiboxarr imports and updates streams from Kodibox builds for Dispatcharr. It
+must not create Channels automatically; users own Channel creation, EPG mapping,
+and which ordered streams are linked to each Channel.
+
+## Principles
+
+- Import streams; never silently create or remap Dispatcharr Channels.
+- Keep each provider identifiable and its credentials/secrets out of logs.
+- Use Dispatcharr's native ordered ChannelStream failover instead of inventing a
+  competing channel-level retry system.
+- Make discovery and proposed changes inspectable before writes; destructive or
+  bulk actions require explicit user action.
+- Prefer small fixture-backed tests and verified plugin ZIPs over live-provider
+  assumptions.
+
+## Milestones
+
+Status: **Next** — planned; **In progress** — implementation underway;
+**Done** — implemented and verified.
+
+### 1. Provider inventory and Vavoo catalog import — Next
+
+Tracking: [#7](https://github.com/mildman1848/kodiboxarr/issues/7)
+
+- Document the KodiboxTV build's playlist, Vavoo catalogue, and Stalker-related
+  data sources, formats, update behavior, and licensing/access assumptions.
+- Add Vavoo catalogue entries as provider-tagged stream candidates without
+  creating Channels or blindly importing every regional/duplicate variant.
+- Provide a read-only/dry-run preview with counts, normalized names, groups,
+  deduplication decisions, and rejected records.
+- Keep the existing Kodi playlist import behavior compatible.
+
+### 2. Stalker provider adapter — Next
+
+Tracking: [#8](https://github.com/mildman1848/kodiboxarr/issues/8)
+
+- Discover and validate Stalker portal/channel data through a separate adapter;
+  the current build does not contain a ready-to-import Stalker channel cache.
+- Handle portal authentication and short-lived playback URLs without exposing
+  credentials or signed URLs in settings output, logs, fixtures, or issues.
+- Normalize discovered streams into the same provider-tagged candidate contract.
+- Include bounded requests, timeouts, clear failure states, and fixture-based
+  tests; no live portal dependency in the test suite.
+
+### 3. Multi-source Channels and native failover — Next
+
+Tracking: [#9](https://github.com/mildman1848/kodiboxarr/issues/9)
+
+- Let a user link multiple ordered provider streams to one existing Dispatcharr
+  Channel (for example, one RTL Channel with KodiboxTV, VavooTV, and StalkerTV
+  alternatives).
+- Never create duplicate Channels or alter EPG mappings during stream import.
+- Resolve a selected candidate using its provider identity and the Channel's
+  configured stream profile; Dispatcharr's live proxy owns ordered failover.
+- Preserve stable stream identity across refreshes and avoid duplicate links.
+- Test primary failure, alternate success, all-candidates-fail, and refresh
+  idempotency against supported Dispatcharr behavior.
+
+### 4. Resolver consolidation and hardening — Next
+
+Tracking: [#10](https://github.com/mildman1848/kodiboxarr/issues/10)
+
+- Consolidate overlapping Vavoo candidate resolution/probing paths behind one
+  provider-aware resolver contract.
+- Bound retries and candidate attempts; expose actionable sanitized diagnostics.
+- Verify TLS certificates by default; any narrowly scoped exception must be
+  explicit, documented, and tested (never a global `verify=False`).
+- Add regression tests for HTTP errors, timeouts, malformed responses, expired
+  URLs, and failover exhaustion.
+
+### 5. Release and operational verification — Next
+
+- Update plugin settings/action descriptions and docs to match implemented
+  behavior (remove stale "future" labels only when the feature is real).
+- Run unit tests, lint/validation, plugin ZIP build, and GitHub Actions.
+- Validate against a controlled Dispatcharr test Channel before any production
+  deployment; deployment and live imports require separate explicit approval.
