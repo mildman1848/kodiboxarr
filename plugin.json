@@ -1,0 +1,148 @@
+{
+  "name": "Kodiboxarr",
+  "version": "0.1.0-dev",
+  "description": "Kodibox TV / Vavoo source support for Dispatcharr. Watches Kodibox builds, imports playlist and EPG metadata, and prepares runtime-resolved stream placeholders.",
+  "author": "Mildman1848 + Hermes Agent",
+  "license": "AGPL-3.0-only",
+  "repo_url": "https://github.com/mildman1848/kodiboxarr",
+  "help_url": "https://github.com/mildman1848/kodiboxarr#readme",
+  "fields": [
+    {
+      "id": "manifest_url",
+      "label": "Kodibox build manifest URL",
+      "type": "string",
+      "default": "https://raw.githubusercontent.com/kodibox32/kodibox/refs/heads/master/builds64.xml",
+      "help_text": "Kodibox Wizard build manifest."
+    },
+    {
+      "id": "groups",
+      "label": "Groups to import",
+      "type": "string",
+      "default": "Germany",
+      "help_text": "Comma-separated groups for future Vavoo catalog mapping."
+    },
+    {
+      "id": "refresh_hours",
+      "label": "Refresh every (hours)",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "help_text": "0 disables automatic refresh."
+    },
+    {
+      "id": "max_removed_percent",
+      "label": "Safety: max removed channels (%)",
+      "type": "number",
+      "default": 30,
+      "min": 0,
+      "max": 100,
+      "help_text": "Stop sync if more channels vanish."
+    },
+    {
+      "id": "fallback_profile",
+      "label": "Fallback stream profile",
+      "type": "string",
+      "default": "ffmpeg",
+      "help_text": "Future resolver fallback profile."
+    },
+    {
+      "id": "channel_start_number",
+      "label": "Channel import start number",
+      "type": "number",
+      "default": 1000,
+      "min": 1,
+      "help_text": "Start number for auto-created Kodiboxarr test channels."
+    },
+    {
+      "id": "channel_import_limit",
+      "label": "Channel import limit",
+      "type": "number",
+      "default": 25,
+      "min": 0,
+      "help_text": "Max channels to create per apply run. 0 means no limit."
+    },
+    {
+      "id": "channel_import_mode",
+      "label": "Channel import mode",
+      "type": "string",
+      "default": "test_batch",
+      "help_text": "test_batch imports next streams; epg_only imports only streams with EPG match; all_missing imports all pending streams if limit=0."
+    },
+    {
+      "id": "status",
+      "label": "Last action",
+      "type": "text",
+      "default": "Nothing has run yet.",
+      "help_text": "Last action result."
+    }
+  ],
+  "actions": [
+    {
+      "id": "check_build",
+      "label": "1. Check Kodibox build",
+      "description": "Read manifest and report build metadata.",
+      "button_label": "Check",
+      "button_variant": "light"
+    },
+    {
+      "id": "dry_run_sync",
+      "label": "2. Dry-run sync",
+      "description": "Parse build and generate snapshot/diff without writing Dispatcharr models.",
+      "button_label": "Dry run",
+      "button_variant": "light"
+    },
+    {
+      "id": "sync_now",
+      "label": "3. Sync",
+      "description": "Write generated M3U, stream profile and EPG source into Dispatcharr after safety gates pass.",
+      "button_label": "Sync",
+      "button_variant": "filled"
+    },
+    {
+      "id": "assign_profile",
+      "label": "Assign stream profile",
+      "description": "Future action: assign Kodiboxarr stream profile.",
+      "button_label": "Assign",
+      "button_variant": "light",
+      "events": [
+        "m3u_refresh",
+        "channel_error"
+      ]
+    },
+    {
+      "id": "mapping_report",
+      "label": "4. Mapping report",
+      "description": "Analyze Kodiboxarr streams, manual-channel conflicts, duplicate tvg-id values and EPG coverage without writing.",
+      "button_label": "Report",
+      "button_variant": "light"
+    },
+    {
+      "id": "dry_run_channel_plan",
+      "label": "5. Dry-run channel plan",
+      "description": "Plan safe auto-created Dispatcharr channels from imported Kodiboxarr streams without writing.",
+      "button_label": "Plan channels",
+      "button_variant": "light"
+    },
+    {
+      "id": "apply_channel_plan",
+      "label": "6. Apply channel plan",
+      "description": "Create marker-protected Dispatcharr channels for planned Kodiboxarr streams.",
+      "button_label": "Create test channels",
+      "button_variant": "filled"
+    },
+    {
+      "id": "dry_run_delete_channels",
+      "label": "7. Dry-run delete Kodiboxarr channels",
+      "description": "Show marker-protected Kodiboxarr channels that would be removed.",
+      "button_label": "Plan delete",
+      "button_variant": "light"
+    },
+    {
+      "id": "delete_auto_channels",
+      "label": "Delete Kodiboxarr test channels",
+      "description": "Remove only channels auto-created by this Kodiboxarr M3U account.",
+      "button_label": "Delete test channels",
+      "button_variant": "light"
+    }
+  ]
+}
