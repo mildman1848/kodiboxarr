@@ -19,6 +19,13 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Check release tag matches plugin version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          VERSION=$(python -c 'import json; print(json.load(open("plugin.json", encoding="utf-8"))["version"])')
+          test "$RELEASE_TAG" = "v$VERSION"
+
       - name: Build plugin ZIP and checksum
         run: |
           python scripts/build_plugin_zip.py

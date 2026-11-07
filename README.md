@@ -37,7 +37,7 @@ The ZIP builder includes only runtime plugin files. It excludes tests, Git metad
 
 ### Vavoo catalog preview
 
-The KodiboxTV build stores its Vavoo cache as zlib-compressed JSON at `userdata/addon_data/plugin.video.kodiboxtv/cache/vav_channels`. The verified envelope is `value.channels`; each channel record has `name`, `group`, and a playback `url`. Kodiboxarr discards that URL, derives a stable opaque candidate identity from normalized name + group, deduplicates within the provider/group, and reports group counts with a bounded sample. Run the ordinary dry-run sync first to prepare the current build cache, then use **Vavoo catalog preview**. The action does not create Dispatcharr Channels or write stream/EPG data. Candidate-to-M3U import and live resolution are still in progress; regional variants remain separate by group.
+The KodiboxTV build stores its Vavoo cache as zlib-compressed JSON at `userdata/addon_data/plugin.video.kodiboxtv/cache/vav_channels`. The verified envelope is `value.channels`; each channel record has `name`, `group`, and a playback `url`. Kodiboxarr discards that URL from the M3U, derives a stable opaque candidate identity from normalized name + group, and preserves regional variants by group. Run **Dry-run sync** to prepare the current build cache, then use **Vavoo catalog preview**. Import is off by default; to opt in, select exact group names from the preview and set an import limit (1–100). This adds only M3U streams, never Dispatcharr Channels. The resolver uses exact group/name matches in the same cache and accepts only HTTPS URLs on `vavoo.to`; existing Kodi/XStream resolution remains separate. Unit tests use synthetic cache fixtures only; live Dispatcharr playback has not been verified.
 
 ## Security and privacy
 

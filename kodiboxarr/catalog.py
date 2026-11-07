@@ -12,6 +12,7 @@ import re
 from collections import defaultdict
 from typing import Any, Iterable
 
+from .models import PlaylistEntry
 from .vavoo_cache import read_cache
 
 PROVIDER = "vavoo"
@@ -56,6 +57,35 @@ def preview_cache(path: Any) -> dict[str, Any]:
     return preview_candidates(records_from_cache(read_cache(path)))
 
 
+def playlist_entries_from_cache(
+    path: Any,
+    *,
+    groups: set[str] | None = None,
+    limit: int = 100,
+) -> list[PlaylistEntry]:
+    """Build a bounded, group-filtered M3U batch without exposing source URLs."""
+    limit = max(0, min(int(limit), 100))
+    if not limit:
+        return []
+    entries = []
+    records = records_from_cache(read_cache(path))
+    if groups:
+        allowed_groups = {_key(group) for group in groups}
+        records = [record for record in records if isinstance(record, dict) and _key(str(record.get("group", ""))) in allowed_groups]
+    preview = preview_candidates(records)
+    for item in preview["changes"][:limit]:
+        identity = item["identity"]
+        group = item["group"]
+        entries.append(PlaylistEntry(
+            name=item["name"],
+            url="",
+            attrs={"tvg-id": f"vavoo:{identity}", "group-title": group or "Vavoo"},
+            kodibox_name=identity,
+            source="kodiboxtv_catalog",
+        ))
+    return entries
+
+
 def preview_candidates(records: Iterable[Any]) -> dict[str, Any]:
     """Return sanitized candidate groups and decisions; never include URLs.
 
@@ -98,7 +128,7 @@ def preview_candidates(records: Iterable[Any]) -> dict[str, Any]:
             for key, values in sorted(groups.items())
         },
         "changes": [
-            {"action": "candidate", **item}
+            {"action": "candidate", "group": key, **item}
             for key in sorted(groups)
             for item in groups[key]
         ][:100],

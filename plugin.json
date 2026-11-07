@@ -1,6 +1,6 @@
 {
   "name": "Kodiboxarr",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Kodibox TV / Vavoo source support for Dispatcharr. Watches Kodibox builds, imports playlist and EPG metadata, and prepares runtime-resolved stream placeholders.",
   "author": "Mildman1848",
   "license": "AGPL-3.0-only",
@@ -13,6 +13,29 @@
       "type": "string",
       "default": "https://raw.githubusercontent.com/kodibox32/kodibox/refs/heads/master/builds64.xml",
       "help_text": "Kodibox Wizard build manifest."
+    },
+    {
+      "id": "include_vavoo_catalog",
+      "label": "Include selected Vavoo catalog groups",
+      "type": "boolean",
+      "default": false,
+      "help_text": "Off by default. Enable only after preview; imports at most 100 candidates from the comma-separated groups below. Does not create Channels."
+    },
+    {
+      "id": "vavoo_catalog_groups",
+      "label": "Vavoo groups to import (comma-separated)",
+      "type": "text",
+      "default": "",
+      "help_text": "Use exact group names from the Vavoo catalog preview. Required when catalog import is enabled."
+    },
+    {
+      "id": "vavoo_catalog_import_limit",
+      "label": "Vavoo candidate import limit",
+      "type": "number",
+      "default": 25,
+      "min": 1,
+      "max": 100,
+      "help_text": "Maximum Vavoo candidates added to the generated M3U in one sync; never more than 100."
     },
 
     {

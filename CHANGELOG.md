@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.2 — 2026-11-07
+
+- Added an opt-in, off-by-default import of selected KodiboxTV Vavoo catalog
+  groups into the generated M3U (settings: `include_vavoo_catalog`,
+  `vavoo_catalog_groups`, `vavoo_catalog_import_limit`; at most 100 candidates
+  per sync). It adds M3U streams only, never Dispatcharr Channels, and warns
+  instead of importing when the cache, groups, or limit are missing.
+- Catalog streams carry opaque placeholder URLs; the resolver matches exact
+  group/name in the KodiboxTV cache and accepts only HTTPS `vavoo.to` URLs,
+  failing closed otherwise.
+- Distinct source URLs for the same service are kept apart with a stable variant
+  ordinal (resolver tries that variant first); exact duplicate URLs are dropped.
+  Source URLs are not stored in placeholders.
+- Tests added with synthetic fixtures (18 pass locally). Live Dispatcharr
+  playback and the target runtime were not verified.
+
 ## 0.1.1 — 2026-11-06
 
 - Corrected the displayed plugin author to `Mildman1848` only.

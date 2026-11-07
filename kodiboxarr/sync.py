@@ -7,9 +7,11 @@ from pathlib import Path
 from typing import Any, Dict
 
 from .build_source import DEFAULT_MANIFEST_URL, download_build, extract_zip, fetch_manifest, parse_manifest
+from .catalog import playlist_entries_from_cache
 from .diff import safety_gate, snapshot_diff
-from .playlist import parse_m3u_file, render_dispatcharr_m3u
+from .playlist import assign_source_variants, parse_m3u_file, render_dispatcharr_m3u
 from .snapshot import build_snapshot
+from .vavoo_cache import KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH
 from .state import atomic_write_json, read_json
 
 DATA_DIR = Path(os.environ.get("KODIBOXARR_DATA_DIR", "/data/kodiboxarr"))
@@ -94,7 +96,33 @@ def create_plan(settings: Dict[str, Any], logger: logging.Logger) -> Dict[str, A
         snapshot_diff(previous, current),
         max_removed_percent=int(settings.get("max_removed_percent") or 30),
     )
-    entries = parse_m3u_file(Path(prepared["build_root"]) / "userdata/addon_data/pvr.iptvsimple/providers/playlist.m3u")
+    entries = assign_source_variants(
+        parse_m3u_file(Path(prepared["build_root"]) / "userdata/addon_data/pvr.iptvsimple/providers/playlist.m3u")
+    )
+    vavoo_cache = Path(prepared["build_root"]) / KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH
+    vavoo_groups = {
+        group.strip()
+        for group in str(settings.get("vavoo_catalog_groups") or "").split(",")
+        if group.strip()
+    }
+    try:
+        vavoo_limit = max(0, min(int(settings.get("vavoo_catalog_import_limit") or 0), 100))
+    except (TypeError, ValueError):
+        vavoo_limit = 0
+    vavoo_entries = []
+    if settings.get("include_vavoo_catalog"):
+        if not vavoo_cache.is_file():
+            diff["warnings"].append("Vavoo catalog import enabled but the verified cache is missing")
+        elif not vavoo_groups or not vavoo_limit:
+            diff["warnings"].append("Vavoo catalog import needs selected groups and a limit from 1 to 100")
+        else:
+            vavoo_entries = playlist_entries_from_cache(vavoo_cache, groups=vavoo_groups, limit=vavoo_limit)
+            entries.extend(vavoo_entries)
+            if not vavoo_entries:
+                diff["warnings"].append("selected Vavoo catalog groups produced no importable candidates")
+        diff["safe"] = not diff["warnings"]
+    diff["vavoo_catalog_candidates"] = len(vavoo_entries)
+    diff["vavoo_catalog_groups"] = sorted({entry.group for entry in vavoo_entries})
     generated_m3u = render_dispatcharr_m3u(entries)
     atomic_write_json(DATA_DIR / "state/snapshot.current.json", current)
     atomic_write_json(DATA_DIR / "state/diff.current.json", diff)

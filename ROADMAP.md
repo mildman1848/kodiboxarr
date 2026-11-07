@@ -24,10 +24,16 @@ Status: **Next** — planned; **In progress** — implementation underway;
 
 Tracking: [#7](https://github.com/mildman1848/kodiboxarr/issues/7)
 
-- Verified the shipped cache envelope and added a URL-free, read-only preview for
+- [x] Verify the shipped cache envelope and implement a URL-free preview for
   provider/group candidate counts and duplicates.
-- Remaining: integrate candidates into the M3U without Channel side effects, then
-  test stable refresh and runtime resolution on fixtures.
+- [x] Add bounded, explicit opt-in M3U import (group-filtered, max 100) with
+  stable identities; stream sync still does not create Dispatcharr Channels.
+- [x] Resolve catalog pseudo-URLs from exact group/name matches in the verified
+  KodiboxTV cache; reject non-HTTPS or non-vavoo.to source URLs.
+- [x] Verify stable rendering, group filtering, exact resolver matching, and
+  fail-closed handling with synthetic fixtures (15 tests pass; Ruff CI rules pass).
+- [ ] Verify on the target Dispatcharr runtime and test actual playback before
+  closing the milestone; no live cache/API or production instance was touched.
 
 ### 2. StalkerTV via Distalker — Next
 

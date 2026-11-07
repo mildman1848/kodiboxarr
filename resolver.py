@@ -15,6 +15,8 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
+from kodiboxarr.vavoo_cache import KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH, read_cache
+
 try:
     import requests
 except ImportError:  # pragma: no cover - handled at runtime in Dispatcharr container
@@ -24,6 +26,10 @@ PSEUDO_HOST = "kodiboxarr.invalid"
 DATA_DIR = Path(os.environ.get("KODIBOXARR_DATA_DIR", "/data/kodiboxarr"))
 CACHE_RELATIVE_PATH = "userdata/addon_data/plugin.video.xstream/vavoo/channels_group_Germany.json"
 CACHE_PATH = Path(os.environ.get("KODIBOXARR_VAVOO_CACHE", DATA_DIR / "extracted/buildzip" / CACHE_RELATIVE_PATH))
+KODIBOXTV_CACHE_PATH = Path(os.environ.get(
+    "KODIBOXARR_KODIBOXTV_VAVOO_CACHE",
+    DATA_DIR / "extracted/buildzip" / KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH,
+))
 SIGNATURE_CACHE = Path(os.environ.get("KODIBOXARR_SIGNATURE_CACHE", DATA_DIR / "state/mediahubmx-signature.json"))
 BROWSER_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -126,6 +132,54 @@ def candidate_names(payload: dict) -> list[str]:
     return names
 
 
+def _catalog_key(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().casefold()
+
+
+def load_kodiboxtv_vavoo_candidates(payload: dict, path: Path | None = None) -> list[str]:
+    """Find exact group/name matches in KodiboxTV's compressed Vavoo cache."""
+    name = payload.get("name")
+    group = payload.get("group")
+    if not isinstance(name, str) or not name.strip() or not isinstance(group, str):
+        raise ValueError("KodiboxTV catalog payload is missing channel name or group")
+    cache = read_cache(path or KODIBOXTV_CACHE_PATH)
+    value = cache.get("value")
+    channels = value.get("channels") if isinstance(value, dict) else None
+    if not isinstance(channels, list):
+        raise ValueError("KodiboxTV Vavoo cache has no channels list")
+
+    matches: list[str] = []
+    wanted = (_catalog_key(group), _catalog_key(name))
+    for item in channels:
+        if not isinstance(item, dict):
+            continue
+        if (_catalog_key(str(item.get("group", ""))), _catalog_key(str(item.get("name", "")))) != wanted:
+            continue
+        url = item.get("url")
+        if not isinstance(url, str):
+            continue
+        parsed = urlparse(url)
+        try:
+            has_port = parsed.port is not None
+        except ValueError:
+            continue
+        if parsed.scheme != "https" or parsed.hostname != "vavoo.to" or parsed.username or parsed.password or has_port:
+            continue
+        if url not in matches:
+            matches.append(url)
+    if not matches:
+        raise KeyError("no exact KodiboxTV Vavoo cache entry for requested group/channel")
+    return matches
+
+
+def _prefer_variant(candidates: list[str], payload: dict) -> list[str]:
+    """Try the candidate matching this stream's variant first; the rest stay as fallbacks."""
+    variant = payload.get("variant")
+    if isinstance(variant, int) and 0 < variant < len(candidates):
+        return [candidates[variant], *candidates[:variant], *candidates[variant + 1 :]]
+    return candidates
+
+
 def choose_vavoo_url(payload: dict, cache: dict[str, list[str]] | None = None) -> str:
     candidates = list_vavoo_candidates(payload, cache)
     return candidates[0]
@@ -138,6 +192,8 @@ def list_vavoo_candidates(payload: dict, cache: dict[str, list[str]] | None = No
     variant), then normalised matches. Backup/HD+/HEVC variants are appended
     last as failover sources.
     """
+    if payload.get("source") == "kodiboxtv_catalog":
+        return _prefer_variant(load_kodiboxtv_vavoo_candidates(payload), payload)
     cache = cache or load_vavoo_cache()
     exact: list[str] = []
     fallback: list[str] = []
@@ -175,7 +231,7 @@ def list_vavoo_candidates(payload: dict, cache: dict[str, list[str]] | None = No
     ordered = exact + fallback
     if not ordered:
         raise KeyError(f"no Vavoo cache entry for {candidate_names(payload)}")
-    return ordered
+    return _prefer_variant(ordered, payload)
 
 
 def _decode_auth_signature(signature: str) -> dict | None:

@@ -28,6 +28,8 @@ class PlaylistEntry:
     url: str
     attrs: Dict[str, str] = field(default_factory=dict)
     kodibox_name: str = ""
+    source: str = ""
+    variant: int = 0  # ordinal of this distinct source among entries sharing one service identity
 
     @property
     def identity(self) -> str:

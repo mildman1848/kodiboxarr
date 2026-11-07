@@ -4,6 +4,7 @@ import base64
 import json
 import re
 from pathlib import Path
+from dataclasses import replace
 from typing import Dict, Iterable, List
 from urllib.parse import parse_qs, urlparse
 
@@ -54,6 +55,24 @@ def parse_m3u(text: str) -> List[PlaylistEntry]:
     return entries
 
 
+def assign_source_variants(entries: Iterable[PlaylistEntry]) -> List[PlaylistEntry]:
+    """Keep distinct source URLs of one service apart; drop only exact duplicate URLs.
+
+    Variant 0 keeps the legacy placeholder bytes. Later distinct URLs get a stable
+    ordinal (playlist order). The URL itself is never stored, since it may be signed.
+    """
+    seen: Dict[tuple, List[str]] = {}
+    result: List[PlaylistEntry] = []
+    for entry in entries:
+        urls = seen.setdefault((entry.identity, entry.name, entry.group, entry.kodibox_name, entry.source), [])
+        if entry.url and entry.url in urls:
+            continue
+        variant = len(urls)
+        urls.append(entry.url)
+        result.append(replace(entry, variant=variant) if variant else entry)
+    return result
+
+
 def parse_m3u_file(path: Path) -> List[PlaylistEntry]:
     return parse_m3u(Path(path).read_text(encoding="utf-8", errors="replace"))
 
@@ -76,6 +95,10 @@ def placeholder_url(entry: PlaylistEntry, provider: str = "vavoo") -> str:
         "kodibox_name": entry.kodibox_name,
         "group": entry.group,
     }
+    if entry.source:
+        payload["source"] = entry.source
+    if entry.variant:
+        payload["variant"] = entry.variant
     return f"http://{PSEUDO_HOST}/{provider}/{b64url_json(payload)}"
 
 

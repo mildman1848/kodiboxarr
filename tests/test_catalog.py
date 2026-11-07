@@ -4,7 +4,8 @@ import json
 import zlib
 from pathlib import Path
 
-from kodiboxarr.catalog import preview_cache, preview_candidates, records_from_cache
+from kodiboxarr.catalog import playlist_entries_from_cache, preview_cache, preview_candidates, records_from_cache
+from kodiboxarr.playlist import parse_m3u, render_dispatcharr_m3u, unb64url_json
 from plugin import Plugin
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -48,6 +49,27 @@ def test_kodiboxtv_cache_adapter_preserves_groups_and_discards_urls():
     assert result["groups"]["News"]["count"] == 1
     assert result["groups"]["Regional"]["count"] == 1
     assert "fixture-url" not in json.dumps(result)
+
+
+def test_catalog_candidates_render_stably_and_keep_regional_variants(tmp_path):
+    cache_path = tmp_path / "vav_channels"
+    cache_path.write_bytes(zlib.compress(json.dumps(load_fixture("kodiboxtv_vavoo_cache.json")).encode()))
+    entries = playlist_entries_from_cache(cache_path)
+    assert len(entries) == 2
+    first = render_dispatcharr_m3u(entries)
+    second = render_dispatcharr_m3u(playlist_entries_from_cache(cache_path))
+    assert first == second
+    parsed = parse_m3u(first)
+    assert [entry.group for entry in parsed] == ["News", "Regional"]
+    assert all(entry.url.startswith("http://kodiboxarr.invalid/vavoo/") for entry in parsed)
+    assert {entry.tvg_id for entry in parsed} == {item.attrs["tvg-id"] for item in entries}
+    assert unb64url_json(parsed[0].url.rsplit("/", 1)[-1])["source"] == "kodiboxtv_catalog"
+    assert "fixture-url" not in first
+
+    regional = playlist_entries_from_cache(cache_path, groups={"regional"}, limit=1)
+    assert len(regional) == 1
+    assert regional[0].group == "Regional"
+    assert regional[0].source == "kodiboxtv_catalog"
 
 
 def test_plugin_dry_run_reads_compressed_cache_without_dispatcharr_writes(tmp_path, monkeypatch):
