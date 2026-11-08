@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Documented Distalker as a separate Stalker/MAG plugin, including its own
+  install/update guidance, M3U streams, manual Channel linking, credential
+  storage risks, and Channel-level stream-profile/fallback behavior.
+- Runtime validation of mixed Kodiboxarr/Distalker Channels and failover remains
+  outstanding; no compatibility claim is made.
+
 ## 0.1.2 — 2026-11-07
 
 - Added an opt-in, off-by-default import of selected KodiboxTV Vavoo catalog

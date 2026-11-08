@@ -8,7 +8,7 @@ Kodiboxarr is a Dispatcharr plugin that tracks Kodibox builds, imports playlist/
 - **Dispatcharr:** [Dispatcharr/dispatcharr](https://github.com/Dispatcharr/Dispatcharr) — host application and plugin integration.
 - **Vavoo/MediaHubMX:** external service endpoints are used by the resolver. This project is independent and is not affiliated with or endorsed by those services.
 - **EPGForgearr:** [mildman1848/epgforgearr](https://github.com/mildman1848/epgforgearr) — separate supplemental XMLTV plugin.
-- **Stalker / MAG portals:** [PiloUnk/distalker](https://github.com/PiloUnk/distalker) is a separate Dispatcharr plugin for Stalker portals. Install and configure it separately; Kodiboxarr does not duplicate or vendor its portal client. Distalker documents that portal credentials are stored in its own state files, so review its security notes before configuring a portal.
+- **Stalker / MAG portals:** [PiloUnk/distalker](https://github.com/PiloUnk/distalker) is a separate Dispatcharr plugin for Stalker portals. Install and configure it separately; Kodiboxarr does not duplicate or vendor its portal client. See [Stalker / MAG portals via Distalker](#stalker--mag-portals-via-distalker-optional-separate-plugin) for setup boundaries and its credential-handling notes.
 
 This repository contains the Kodiboxarr plugin implementation maintained by Mildman1848. It is not a mirror or redistribution of the Kodibox project. Kodibox assets and source archives remain subject to their respective owners' terms.
 
@@ -24,6 +24,29 @@ The plugin catalog is available at:
 ```text
 https://raw.githubusercontent.com/mildman1848/dispatcharr-plugins/main/catalog.json
 ```
+
+## Stalker / MAG portals via Distalker (optional, separate plugin)
+
+[Distalker](https://github.com/PiloUnk/distalker) is a **separate Dispatcharr plugin** with its own [releases](https://github.com/PiloUnk/distalker/releases) and its own license (AGPL-3.0-only, see its repository's `LICENSE`/`NOTICE`). Kodiboxarr does not bundle, vendor, call, or reimplement it; there is no Stalker code or portal setting in this repository.
+
+- **Install and configure it separately**, following Distalker's own README. As a separate step from any Kodiboxarr sync, Distalker documents that you should restart Dispatcharr after importing or updating it, because workers can hold different plugin code. Plan that restart yourself; nothing in Kodiboxarr performs or requires it.
+- **Its streams are its own.** Distalker writes its own M3U-backed account and streams for each portal. Kodiboxarr neither creates nor manages them.
+- **You link them to a Channel yourself.** Attach a Distalker stream to an existing Dispatcharr Channel the same way you attach Kodiboxarr streams. Neither plugin creates Channels for this.
+
+### Security notes (from Distalker's documentation)
+
+- Portal credentials exist **unencrypted** in Distalker's files on disk (`/data/distalker/portals.txt` and `/data/distalker/state/*.json`, mode `0600`), plus Redis. Anyone with filesystem access, and any backup of `/data`, can read them. Treat backups accordingly.
+- Dispatcharr's plugin settings view shows them redacted, but that does not protect the files.
+- No portal credentials or signed URLs belong in this repository, issues, or logs.
+
+### Stream-profile behavior (Channel level)
+
+Dispatcharr picks the stream profile from the **Channel**, not from the individual stream. Distalker assigns its custom `Distalker` profile to a Channel that carries one of its portal streams. Consequently:
+
+- If that Channel also has non-portal streams (for example Kodiboxarr streams), Distalker routes them through its configurable **fallback stream profile** (default `ffmpeg`), which means an ffmpeg remux instead of Dispatcharr's direct relay.
+- **Do not set `Distalker` as the global Default Stream Profile**; that would affect every channel.
+
+Kodiboxarr makes no claim of generic Dispatcharr ordered failover or of compatibility beyond what Distalker documents. Mixing Kodiboxarr and Distalker streams on one Channel (and failover between them) has **not been validated at runtime** here; check Distalker's README for its current guidance before relying on it.
 
 ## Development
 

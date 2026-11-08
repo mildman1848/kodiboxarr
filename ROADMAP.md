@@ -35,18 +35,18 @@ Tracking: [#7](https://github.com/mildman1848/kodiboxarr/issues/7)
 - [ ] Verify on the target Dispatcharr runtime and test actual playback before
   closing the milestone; no live cache/API or production instance was touched.
 
-### 2. StalkerTV via Distalker — Next
+### 2. StalkerTV via Distalker — In progress
 
 Tracking: [#8](https://github.com/mildman1848/kodiboxarr/issues/8)
 
-- Document Distalker as the external Stalker/MAG portal plugin; Kodiboxarr does
-  not implement or vendor a second portal client.
-- Describe how Distalker-generated M3U streams can coexist with Kodiboxarr and
-  be linked by the user to an existing Channel in Dispatcharr.
-- Verify/document stream-profile assignment and current compatibility boundaries
-  for using Distalker streams as ordered alternatives on a Channel.
-- Link to Distalker's own releases, license, credential handling, and update
-  notes; keep Distalker code and portal credentials outside this repository.
+- [x] Document [Distalker](https://github.com/PiloUnk/distalker) as the external
+  Stalker/MAG portal plugin (separate install, releases, license); Kodiboxarr
+  does not implement or vendor a second portal client.
+- [x] Describe that Distalker's own M3U streams are linked by the user to an
+  existing Channel, and document its credential storage and Channel-level
+  stream-profile/fallback behavior per its README.
+- [ ] Runtime validation of Kodiboxarr + Distalker streams on one Channel
+  (profile assignment, playback, failover) — not yet verified.
 
 ### 3. Multi-source Channels and native failover — Next
 
