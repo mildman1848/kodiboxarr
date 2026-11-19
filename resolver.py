@@ -38,6 +38,7 @@ BROWSER_UA = (
 )
 MEDIAHUB_UA = "MediaHubMX/2"
 CLIENT_VERSION = "3.1.0"
+MAX_CANDIDATE_ATTEMPTS = 8
 FFMPEG_READ_CHUNK = int(os.environ.get("KODIBOXARR_FFMPEG_READ_CHUNK", str(16 * 1024)))
 FFMPEG_STALL_SECONDS = float(os.environ.get("KODIBOXARR_FFMPEG_STALL_SECONDS", "10.0"))
 FFMPEG_REALTIME = os.environ.get("KODIBOXARR_FFMPEG_REALTIME", "1").lower() not in {"0", "false", "no", "off"}
@@ -377,24 +378,57 @@ def resolve_healthy_vavoo_candidate(vavoo_url: str) -> str:
     return resolved
 
 
+def _safe_failure_category(exc: Exception) -> str:
+    """Classify resolver failures without exposing exception text or URLs."""
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    if isinstance(status, int):
+        return f"http-{status}"
+    name = type(exc).__name__.lower()
+    if "timeout" in name:
+        return "timeout"
+    if "ssl" in name or "certificate" in name:
+        return "tls-verification"
+    if "connection" in name or isinstance(exc, OSError):
+        return "network"
+    if "json" in name or isinstance(exc, ValueError):
+        return "malformed-response"
+    if isinstance(exc, RuntimeError):
+        return "resolver-or-probe-failure"
+    return "resolver-failure"
+
+
 def resolve_pseudo_url(url: str) -> str:
     payload = decode_payload(url)
     if payload.get("provider") != "vavoo":
         raise ValueError(f"unsupported provider: {payload.get('provider')}")
     candidates = list_vavoo_candidates(payload)
-    name = payload.get("name") or payload.get("kodibox_name")
-    log(f"matched {name} -> {len(candidates)} candidate(s), primary host {safe_url_host(candidates[0])}")
-    last_error: Exception | None = None
-    for index, vavoo_url in enumerate(candidates):
+    name = payload.get("name") or payload.get("kodibox_name") or "unknown channel"
+    if not candidates:
+        raise RuntimeError("no Vavoo candidates found; refresh the provider cache or check the channel mapping")
+
+    attempt_limit = min(len(candidates), MAX_CANDIDATE_ATTEMPTS)
+    log(f"matched {name} -> {len(candidates)} candidate(s); trying at most {attempt_limit}")
+    failures: dict[str, int] = {}
+    for index, vavoo_url in enumerate(candidates[:MAX_CANDIDATE_ATTEMPTS]):
         try:
             resolved = resolve_healthy_vavoo_candidate(vavoo_url)
             if index:
                 log(f"primary source unhealthy; using candidate #{index + 1} for {name}")
             return resolved
         except Exception as exc:  # noqa: BLE001 - try next candidate on resolver failure
-            log(f"candidate #{index + 1} failed for {name}: {type(exc).__name__}")
-            last_error = exc
-    raise RuntimeError(f"all {len(candidates)} candidates failed for {name}: {type(last_error).__name__ if last_error else 'unknown error'}")
+            category = _safe_failure_category(exc)
+            log(f"candidate #{index + 1} failed for {name}: {category}")
+            failures[category] = failures.get(category, 0) + 1
+
+    summary = ", ".join(f"{category}: {count}" for category, count in sorted(failures.items()))
+    skipped = len(candidates) - attempt_limit
+    suffix = f"; {skipped} additional candidate(s) not attempted (limit {MAX_CANDIDATE_ATTEMPTS})" if skipped else ""
+    message = f"Vavoo resolution failed after {attempt_limit} candidate(s): {summary}{suffix}. "
+    if "http-403" in failures:
+        message += "HTTP 403 can indicate a forbidden or expired source; refresh the provider cache."
+    else:
+        message += "Check provider connectivity and refresh the provider cache if sources are stale."
+    raise RuntimeError(message)
 
 
 def _ffmpeg_command(url: str, user_agent: str) -> list[str]:
@@ -493,29 +527,38 @@ def stream_resolved_url(url: str, user_agent: str) -> tuple[int, int, str]:
 
 def passthrough_vavoo_payload(payload: dict, user_agent: str) -> int:
     candidates = list_vavoo_candidates(payload)
-    name = payload.get("name") or payload.get("kodibox_name")
-    log(f"matched {name} -> {len(candidates)} candidate(s), primary host {safe_url_host(candidates[0])}")
-    last_error: Exception | None = None
-    for index, vavoo_url in enumerate(candidates):
+    name = payload.get("name") or payload.get("kodibox_name") or "unknown channel"
+    if not candidates:
+        raise RuntimeError("no Vavoo candidates found; refresh the provider cache or check the channel mapping")
+
+    attempt_limit = min(len(candidates), MAX_CANDIDATE_ATTEMPTS)
+    log(f"matched {name} -> {len(candidates)} candidate(s); trying at most {attempt_limit}")
+    failures: dict[str, int] = {}
+    for index, vavoo_url in enumerate(candidates[:MAX_CANDIDATE_ATTEMPTS]):
         try:
             resolved = resolve_healthy_vavoo_candidate(vavoo_url)
-            if index:
-                log(f"using candidate #{index + 1} for {name}")
-            else:
-                log(f"using candidate #1 for {name}")
+            log(f"using candidate #{index + 1} for {name}")
             rc, written, reason = stream_resolved_url(resolved, user_agent or "libmpv")
-            if written > 0 and rc == 0:
-                log(f"candidate #{index + 1} produced {written} bytes; ffmpeg exited rc={rc} reason={reason}")
-                return rc
             if written > 0:
                 log(f"candidate #{index + 1} produced {written} bytes then stopped rc={rc} reason={reason}")
                 return rc
-            else:
-                log(f"candidate #{index + 1} produced no data rc={rc} reason={reason}; trying next mirror")
+            category = f"stream-{reason}-rc-{rc}"
+            log(f"candidate #{index + 1} produced no data rc={rc} reason={reason}; trying next mirror")
+            failures[category] = failures.get(category, 0) + 1
         except Exception as exc:  # noqa: BLE001 - try next candidate on resolver failure
-            log(f"candidate #{index + 1} failed for {name}: {type(exc).__name__}")
-            last_error = exc
-    raise RuntimeError(f"all {len(candidates)} candidates failed for {name}: {type(last_error).__name__ if last_error else 'unknown error'}")
+            category = _safe_failure_category(exc)
+            log(f"candidate #{index + 1} failed for {name}: {category}")
+            failures[category] = failures.get(category, 0) + 1
+
+    summary = ", ".join(f"{category}: {count}" for category, count in sorted(failures.items()))
+    skipped = len(candidates) - attempt_limit
+    suffix = f"; {skipped} additional candidate(s) not attempted (limit {MAX_CANDIDATE_ATTEMPTS})" if skipped else ""
+    message = f"Vavoo playback failed after {attempt_limit} candidate(s): {summary}{suffix}. "
+    if "http-403" in failures:
+        message += "HTTP 403 can indicate a forbidden or expired source; refresh the provider cache."
+    else:
+        message += "Check provider connectivity and refresh the provider cache if sources are stale."
+    raise RuntimeError(message)
 
 
 def main(argv: list[str]) -> int:

@@ -55,7 +55,7 @@ def test_tcp_probe_failure_log_omits_signed_url(monkeypatch, capsys):
     monkeypatch.setattr(resolver, "resolve_vavoo_link", lambda url: signed)
     monkeypatch.setattr(resolver, "probe_resolved_url", lambda url: False)
 
-    with pytest.raises(RuntimeError, match="all 1 candidates failed"):
+    with pytest.raises(RuntimeError, match="Vavoo playback failed after 1 candidate"):
         resolver.passthrough_vavoo_payload({"name": "Fixture"}, "ua")
 
     err = capsys.readouterr().err
@@ -119,3 +119,86 @@ def test_resolve_pseudo_url_uses_shared_candidate_resolution(monkeypatch):
     monkeypatch.setattr(resolver, "resolve_healthy_vavoo_candidate", lambda _url: "https://edge.example.invalid/ok")
 
     assert resolver.resolve_pseudo_url("https://kodiboxarr.invalid/vavoo/fixture") == "https://edge.example.invalid/ok"
+
+
+def test_resolve_pseudo_url_bounds_candidates_and_reports_safe_failure_categories(monkeypatch):
+    attempted = []
+    candidates = [f"https://vavoo.to/source-{index}?secret=hidden" for index in range(12)]
+
+    class HTTPError(Exception):
+        def __init__(self, *args):
+            super().__init__(*args)
+            self.response = type("Response", (), {"status_code": 403})()
+
+    class Timeout(Exception):
+        pass
+
+    def fail(candidate):
+        attempted.append(candidate)
+        if len(attempted) == 1:
+            raise HTTPError("https://vavoo.to/private?secret=hidden")
+        raise Timeout("https://vavoo.to/private?secret=hidden")
+
+    monkeypatch.setattr(resolver, "decode_payload", lambda _url: {"provider": "vavoo", "name": "Fixture"})
+    monkeypatch.setattr(resolver, "list_vavoo_candidates", lambda _payload: candidates)
+    monkeypatch.setattr(resolver, "resolve_healthy_vavoo_candidate", fail)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        resolver.resolve_pseudo_url("https://kodiboxarr.invalid/vavoo/fixture")
+
+    assert len(attempted) == 8
+    assert "http-403" in str(exc_info.value)
+    assert "timeout" in str(exc_info.value)
+    assert "secret" not in str(exc_info.value)
+    assert "private" not in str(exc_info.value)
+
+
+def test_resolve_pseudo_url_reports_empty_candidate_set(monkeypatch):
+    monkeypatch.setattr(resolver, "decode_payload", lambda _url: {"provider": "vavoo", "name": "Fixture"})
+    monkeypatch.setattr(resolver, "list_vavoo_candidates", lambda _payload: [])
+
+    with pytest.raises(RuntimeError, match="no Vavoo candidates"):
+        resolver.resolve_pseudo_url("https://kodiboxarr.invalid/vavoo/fixture")
+
+
+def test_resolve_pseudo_url_classifies_server_error_without_exposing_source(monkeypatch):
+    source = "https://vavoo.to/signed-path?token=never-log-this"
+
+    class HTTPError(Exception):
+        def __init__(self):
+            super().__init__(source)
+            self.response = type("Response", (), {"status_code": 503})()
+
+    monkeypatch.setattr(resolver, "decode_payload", lambda _url: {"provider": "vavoo", "name": "Fixture"})
+    monkeypatch.setattr(resolver, "list_vavoo_candidates", lambda _payload: [source])
+
+    def fail(_url):
+        raise HTTPError()
+
+    monkeypatch.setattr(resolver, "resolve_healthy_vavoo_candidate", fail)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        resolver.resolve_pseudo_url("https://kodiboxarr.invalid/vavoo/fixture")
+
+    assert "http-503" in str(exc_info.value)
+    assert "token" not in str(exc_info.value)
+    assert "signed-path" not in str(exc_info.value)
+
+
+def test_playback_resolver_bounds_candidate_attempts(monkeypatch):
+    attempted = []
+    candidates = [f"https://vavoo.to/source-{index}" for index in range(11)]
+
+    def fail(candidate):
+        attempted.append(candidate)
+        raise TimeoutError("private signed source")
+
+    monkeypatch.setattr(resolver, "list_vavoo_candidates", lambda _payload: candidates)
+    monkeypatch.setattr(resolver, "resolve_healthy_vavoo_candidate", fail)
+
+    with pytest.raises(RuntimeError, match="8 candidate") as exc_info:
+        resolver.passthrough_vavoo_payload({"name": "Fixture"}, "test-agent")
+
+    assert len(attempted) == 8
+    assert "private signed source" not in str(exc_info.value)
+    assert "3 additional candidate(s) not attempted" in str(exc_info.value)

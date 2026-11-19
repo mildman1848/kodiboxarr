@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.4 — 2026-11-19
+
+- Cap Vavoo candidate resolution and playback failover at eight attempts per
+  request; empty candidate sets now return a clear cache/mapping diagnostic.
+- Classify HTTP status, timeout, TLS, network, malformed-response, resolver, and
+  stream failures without logging exception messages or signed source URLs.
+- Add synthetic regression coverage for HTTP 403/503, timeouts, empty/exhausted
+  candidate sets, attempt bounds, and signed URL secrecy. HTTP 403 is reported as
+  potentially expired or forbidden; expiry cannot be distinguished provider-side.
+- TLS certificate verification remains enabled by Requests defaults. No live
+  Dispatcharr installation or playback was performed.
+
 ## 0.1.3 — 2026-11-19
 
 - Consolidated Vavoo candidate resolution and TCP health checks across playback

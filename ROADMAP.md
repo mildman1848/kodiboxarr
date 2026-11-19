@@ -68,17 +68,18 @@ Tracking: [#10](https://github.com/mildman1848/kodiboxarr/issues/10)
 
 - [x] Share candidate resolution and TCP health checks between playback and
   resolve-only paths; failure diagnostics expose only the resolved edge host.
-- Consolidate overlapping Vavoo candidate resolution/probing paths behind one
-  provider-aware resolver contract.
+- [x] Consolidate overlapping Vavoo candidate resolution/probing paths behind
+  the shared `resolve_healthy_vavoo_candidate` contract; both resolve-only and
+  playback now enforce the same maximum of eight candidate attempts.
 - [x] Reject malformed resolver responses and enforce absolute HTTPS URLs with
   a hostname; keep error diagnostics free of incoming URLs and signed paths.
-- [x] Test shared resolution, malformed/non-HTTPS responses, and sanitized
+- [x] Test shared resolution, malformed/non-HTTPS responses, HTTP 403/5xx,
+  timeouts, empty/exhausted candidates, bounded attempts, and sanitized
   diagnostics with synthetic fixtures.
-- [ ] Bound retries and candidate attempts; expose actionable sanitized diagnostics.
-- [ ] Verify TLS certificates by default; any narrowly scoped exception must be
-  explicit, documented, and tested (never a global `verify=False`).
-- [ ] Add regression tests for HTTP errors, timeouts, expired URLs, and failover
-  exhaustion.
+- [x] Keep Requests TLS verification at its secure default; no global
+  `verify=False` or TLS exception exists.
+- [ ] Verify on live Dispatcharr and provider endpoints before making runtime or
+  playback claims; no live install/playback validation performed.
 
 ### 5. Initial release and operational verification — Done (v0.1.0)
 
