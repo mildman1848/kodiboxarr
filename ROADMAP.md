@@ -62,17 +62,23 @@ Tracking: [#9](https://github.com/mildman1848/kodiboxarr/issues/9)
 - Test primary failure, alternate success, all-candidates-fail, and refresh
   idempotency against supported Dispatcharr behavior.
 
-### 4. Resolver consolidation and hardening — Next
+### 4. Resolver consolidation and hardening — In progress
 
 Tracking: [#10](https://github.com/mildman1848/kodiboxarr/issues/10)
 
+- [x] Share candidate resolution and TCP health checks between playback and
+  resolve-only paths; failure diagnostics expose only the resolved edge host.
 - Consolidate overlapping Vavoo candidate resolution/probing paths behind one
   provider-aware resolver contract.
-- Bound retries and candidate attempts; expose actionable sanitized diagnostics.
-- Verify TLS certificates by default; any narrowly scoped exception must be
+- [x] Reject malformed resolver responses and enforce absolute HTTPS URLs with
+  a hostname; keep error diagnostics free of incoming URLs and signed paths.
+- [x] Test shared resolution, malformed/non-HTTPS responses, and sanitized
+  diagnostics with synthetic fixtures.
+- [ ] Bound retries and candidate attempts; expose actionable sanitized diagnostics.
+- [ ] Verify TLS certificates by default; any narrowly scoped exception must be
   explicit, documented, and tested (never a global `verify=False`).
-- Add regression tests for HTTP errors, timeouts, malformed responses, expired
-  URLs, and failover exhaustion.
+- [ ] Add regression tests for HTTP errors, timeouts, expired URLs, and failover
+  exhaustion.
 
 ### 5. Initial release and operational verification — Done (v0.1.0)
 

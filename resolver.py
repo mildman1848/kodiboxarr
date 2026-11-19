@@ -338,9 +338,13 @@ def resolve_vavoo_link(vavoo_url: str) -> str:
     )
     response.raise_for_status()
     data = response.json()
-    if not isinstance(data, list) or not data or not data[0].get("url"):
-        raise RuntimeError(f"unexpected resolve response for {vavoo_url}")
-    return data[0]["url"]
+    resolved = data[0].get("url") if isinstance(data, list) and data and isinstance(data[0], dict) else None
+    if not isinstance(resolved, str) or not resolved:
+        raise RuntimeError("unexpected Vavoo resolve response")
+    parsed = urlparse(resolved)
+    if parsed.scheme != "https" or not parsed.hostname:
+        raise RuntimeError("Vavoo resolve response did not contain a valid HTTPS URL")
+    return resolved
 
 
 def probe_resolved_url(url: str, timeout: float = 5.0) -> bool:
@@ -363,6 +367,16 @@ def probe_resolved_url(url: str, timeout: float = 5.0) -> bool:
         return False
 
 
+def resolve_healthy_vavoo_candidate(vavoo_url: str) -> str:
+    """Resolve one source and reject it if its edge cannot accept TCP."""
+    resolved = resolve_vavoo_link(vavoo_url)
+    if not probe_resolved_url(resolved):
+        host = safe_url_host(resolved)
+        log(f"resolved candidate failed TCP probe at host {host}")
+        raise RuntimeError(f"resolved URL probe failed at host {host}")
+    return resolved
+
+
 def resolve_pseudo_url(url: str) -> str:
     payload = decode_payload(url)
     if payload.get("provider") != "vavoo":
@@ -373,14 +387,11 @@ def resolve_pseudo_url(url: str) -> str:
     last_error: Exception | None = None
     for index, vavoo_url in enumerate(candidates):
         try:
-            resolved = resolve_vavoo_link(vavoo_url)
-            if probe_resolved_url(resolved):
-                if index:
-                    log(f"primary source unhealthy; using candidate #{index + 1} for {name}")
-                return resolved
-            log(f"candidate #{index + 1} resolved but failed probe at host {safe_url_host(resolved)}")
-            last_error = RuntimeError("resolved URL probe failed")
-        except Exception as exc:  # noqa: BLE001 - try next candidate on any failure
+            resolved = resolve_healthy_vavoo_candidate(vavoo_url)
+            if index:
+                log(f"primary source unhealthy; using candidate #{index + 1} for {name}")
+            return resolved
+        except Exception as exc:  # noqa: BLE001 - try next candidate on resolver failure
             log(f"candidate #{index + 1} failed for {name}: {type(exc).__name__}")
             last_error = exc
     raise RuntimeError(f"all {len(candidates)} candidates failed for {name}: {type(last_error).__name__ if last_error else 'unknown error'}")
@@ -487,10 +498,7 @@ def passthrough_vavoo_payload(payload: dict, user_agent: str) -> int:
     last_error: Exception | None = None
     for index, vavoo_url in enumerate(candidates):
         try:
-            resolved = resolve_vavoo_link(vavoo_url)
-            if not probe_resolved_url(resolved):
-                log(f"candidate #{index + 1} failed TCP probe: {resolved[:80]}")
-                continue
+            resolved = resolve_healthy_vavoo_candidate(vavoo_url)
             if index:
                 log(f"using candidate #{index + 1} for {name}")
             else:
@@ -504,7 +512,7 @@ def passthrough_vavoo_payload(payload: dict, user_agent: str) -> int:
                 return rc
             else:
                 log(f"candidate #{index + 1} produced no data rc={rc} reason={reason}; trying next mirror")
-        except Exception as exc:  # noqa: BLE001 - try next candidate on any failure
+        except Exception as exc:  # noqa: BLE001 - try next candidate on resolver failure
             log(f"candidate #{index + 1} failed for {name}: {type(exc).__name__}")
             last_error = exc
     raise RuntimeError(f"all {len(candidates)} candidates failed for {name}: {type(last_error).__name__ if last_error else 'unknown error'}")

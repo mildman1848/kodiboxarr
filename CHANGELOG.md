@@ -1,7 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.1.3 — 2026-11-19
 
+- Consolidated Vavoo candidate resolution and TCP health checks across playback
+  and resolve-only paths; failed-probe diagnostics expose only the edge host.
+- Reject malformed resolver responses and non-HTTPS or hostless URLs without
+  including the incoming source URL in errors. TLS verification remains enabled.
+- Added regression coverage for shared resolution, malformed responses, HTTPS
+  validation, and sanitized diagnostics. Resolver roadmap item #10 remains open:
+  HTTP errors/timeouts, expired URLs and full candidate exhaustion need more
+  coverage; live Dispatcharr playback was not verified.
 - Documented Distalker as a separate Stalker/MAG plugin, including its own
   install/update guidance, M3U streams, manual Channel linking, credential
   storage risks, and Channel-level stream-profile/fallback behavior.
