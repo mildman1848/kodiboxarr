@@ -92,7 +92,7 @@ def test_preview_cache_rejects_unknown_cache_envelope(tmp_path):
     cache_path.write_bytes(zlib.compress(b"{}"))
     try:
         preview_cache(cache_path)
-    except ValueError as exc:
+    except TypeError as exc:
         assert "cache envelope" in str(exc)
     else:
         raise AssertionError("unexpected cache envelope should be rejected")

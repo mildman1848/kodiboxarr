@@ -48,6 +48,21 @@ Dispatcharr picks the stream profile from the **Channel**, not from the individu
 
 Kodiboxarr makes no claim of generic Dispatcharr ordered failover or of compatibility beyond what Distalker documents. Mixing Kodiboxarr and Distalker streams on one Channel (and failover between them) has **not been validated at runtime** here; check Distalker's README for its current guidance before relying on it.
 
+## Multiple provider streams on one Channel (manual workflow)
+
+To offer alternatives for one station (for example KodiboxTV, VavooTV, and a Distalker stream), build the Channel yourself in Dispatcharr:
+
+1. Create or pick the Channel in Dispatcharr.
+2. In the Dispatcharr UI, add each provider's stream to that Channel and drag them into the order you want tried. That order is the failover order; Dispatcharr's live proxy owns it.
+3. Run `assign_profile` (optional, see below).
+
+Kodiboxarr's boundaries:
+
+- It imports **only its own streams**. It never creates Channels, and it never creates, removes, or reorders `ChannelStream` links or touches EPG mappings on a Channel you built.
+- Linking and ordering happen only in the Dispatcharr UI.
+- `assign_profile` sets the Kodiboxarr stream profile on the Kodiboxarr streams, and **fills the stream profile only on linked Channels that have none**. A Channel with a non-empty profile keeps it unless an overwrite is explicitly requested in code; the plugin action does not request it. Links and their order are not changed.
+- Because the profile is per Channel, a mixed Channel runs every stream through that one profile. Runtime playback and failover across mixed providers are **not verified**.
+
 ## Development
 
 ```bash

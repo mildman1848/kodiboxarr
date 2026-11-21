@@ -4,15 +4,15 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from .build_source import DEFAULT_MANIFEST_URL, download_build, extract_zip, fetch_manifest, parse_manifest
 from .catalog import playlist_entries_from_cache
 from .diff import safety_gate, snapshot_diff
 from .playlist import assign_source_variants, parse_m3u_file, render_dispatcharr_m3u
 from .snapshot import build_snapshot
-from .vavoo_cache import KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH
 from .state import atomic_write_json, read_json
+from .vavoo_cache import KODIBOXTV_VAVOO_CACHE_RELATIVE_PATH
 
 DATA_DIR = Path(os.environ.get("KODIBOXARR_DATA_DIR", "/data/kodiboxarr"))
 M3U_DIR = Path("/data/uploads/m3us")
@@ -21,7 +21,7 @@ STREAM_PROFILE_NAME = "Kodiboxarr"
 MARKER_KEY = "kodiboxarr"
 
 
-def prepare_build(settings: Dict[str, Any], logger: logging.Logger) -> Dict[str, Any]:
+def prepare_build(settings: dict[str, Any], logger: logging.Logger) -> dict[str, Any]:
     """Fetch and extract the current Kodibox build into the data volume."""
     manifest_url = settings.get("manifest_url") or DEFAULT_MANIFEST_URL
     manifest_xml = fetch_manifest(manifest_url)
@@ -81,7 +81,7 @@ def write_m3u(content: str) -> Path:
     return path
 
 
-def create_plan(settings: Dict[str, Any], logger: logging.Logger) -> Dict[str, Any]:
+def create_plan(settings: dict[str, Any], logger: logging.Logger) -> dict[str, Any]:
     """Build the current snapshot, generated M3U and safety-gated diff."""
     prepared = prepare_build(settings, logger)
     snapshot = build_snapshot(
@@ -203,7 +203,7 @@ def upsert_account_placeholder():
     return account
 
 
-def upsert_account(file_path: Path, snapshot: Dict[str, Any], refresh_hours: int = 0):
+def upsert_account(file_path: Path, snapshot: dict[str, Any], refresh_hours: int = 0):
     from apps.m3u.models import M3UAccount
 
     account = M3UAccount.objects.filter(custom_properties__has_key=MARKER_KEY).first()
@@ -228,7 +228,7 @@ def upsert_account(file_path: Path, snapshot: Dict[str, Any], refresh_hours: int
     return account
 
 
-def upsert_epg_source(snapshot: Dict[str, Any]):
+def upsert_epg_source(snapshot: dict[str, Any]):
     from apps.epg.models import EPGSource
 
     epg_url = (snapshot.get("epg") or {}).get("url") or ""
@@ -289,18 +289,18 @@ def _next_channel_number(used: set, start: int) -> float:
     return number
 
 
-def build_channel_plan(settings: Dict[str, Any], apply: bool = False) -> Dict[str, Any]:
+def build_channel_plan(settings: dict[str, Any], apply: bool = False) -> dict[str, Any]:
     """Plan or apply safe Kodiboxarr channel creation from imported streams.
 
     The plan is intentionally marker-based: only channels with
     auto_created_by=Kodiboxarr are updated/deleted by later iterations. Manual
     channels are reported as conflicts and left untouched.
     """
-    from django.db import transaction
-    from django.utils import timezone
     from apps.channels.models import Channel, ChannelGroup, ChannelStream, Stream
     from apps.epg.models import EPGData, EPGSource
     from apps.m3u.models import M3UAccount
+    from django.db import transaction
+    from django.utils import timezone
 
     account = M3UAccount.objects.get(name=ACCOUNT_NAME)
     profile, _ = install_stream_profile()
@@ -309,8 +309,7 @@ def build_channel_plan(settings: Dict[str, Any], apply: bool = False) -> Dict[st
     import_mode = str(settings.get("channel_import_mode") or "test_batch").strip().lower()
     if import_mode not in {"test_batch", "epg_only", "all_missing"}:
         import_mode = "test_batch"
-    if limit < 0:
-        limit = 0
+    limit = max(limit, 0)
 
     streams = list(
         Stream.objects.filter(m3u_account=account, is_stale=False)
@@ -416,16 +415,16 @@ def build_channel_plan(settings: Dict[str, Any], apply: bool = False) -> Dict[st
     }
 
 
-def delete_auto_channels(settings: Dict[str, Any], apply: bool = False) -> Dict[str, Any]:
+def delete_auto_channels(settings: dict[str, Any], apply: bool = False) -> dict[str, Any]:
     """Plan or delete channels owned by Kodiboxarr's marker.
 
     Manual channels are never touched. This is the quick rollback for staged
     imports during development and safe enough to expose as a plugin action.
     """
-    from django.db import transaction
-    from django.utils import timezone
     from apps.channels.models import Channel, ChannelStream, Stream
     from apps.m3u.models import M3UAccount
+    from django.db import transaction
+    from django.utils import timezone
 
     account = M3UAccount.objects.get(name=ACCOUNT_NAME)
     channels = list(
@@ -460,7 +459,7 @@ def delete_auto_channels(settings: Dict[str, Any], apply: bool = False) -> Dict[
     }
 
 
-def generate_mapping_report(settings: Dict[str, Any]) -> Dict[str, Any]:
+def generate_mapping_report(settings: dict[str, Any]) -> dict[str, Any]:
     """Generate a non-mutating report for Kodiboxarr stream/channel/EPG mapping.
 
     This report is the safety layer before bulk imports: it shows what is
@@ -468,10 +467,11 @@ def generate_mapping_report(settings: Dict[str, Any]) -> Dict[str, Any]:
     and which tvg-id values are ambiguous.
     """
     from collections import Counter, defaultdict
-    from django.utils import timezone
+
     from apps.channels.models import Channel, ChannelStream, Stream
     from apps.epg.models import EPGData, EPGSource
     from apps.m3u.models import M3UAccount
+    from django.utils import timezone
 
     account = M3UAccount.objects.get(name=ACCOUNT_NAME)
     streams = list(
@@ -562,7 +562,7 @@ def generate_mapping_report(settings: Dict[str, Any]) -> Dict[str, Any]:
     return report
 
 
-def sync_to_dispatcharr(settings: Dict[str, Any], logger: logging.Logger, dry_run: bool = False) -> Dict[str, Any]:
+def sync_to_dispatcharr(settings: dict[str, Any], logger: logging.Logger, dry_run: bool = False) -> dict[str, Any]:
     """Generate Kodiboxarr data and optionally write Dispatcharr models."""
     plan = create_plan(settings, logger)
     if dry_run:
@@ -598,13 +598,13 @@ def sync_to_dispatcharr(settings: Dict[str, Any], logger: logging.Logger, dry_ru
     return result
 
 
-def _summary(plan: Dict[str, Any], prefix: str) -> str:
+def _summary(plan: dict[str, Any], prefix: str) -> str:
     snap = plan["snapshot"]
     diff = plan["diff"]
     return f"{prefix}: {snap['channel_count']} channels, EPG={bool((snap.get('epg') or {}).get('url'))}, safe={diff.get('safe')}"
 
 
-def _public_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
+def _public_plan(plan: dict[str, Any]) -> dict[str, Any]:
     return {"snapshot": plan["snapshot"], "diff": plan["diff"]}
 
 

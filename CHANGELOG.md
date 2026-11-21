@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5 — 2026-11-21
+
+- Document the manual Dispatcharr workflow for ordered multi-provider streams;
+  add offline regression tests for profile assignment and the safe sync boundary.
+- Harden cache validation and resolver error handling; make Ruff pass across the
+  repository. Live mixed-provider playback and failover remain unverified.
+
 ## 0.1.4 — 2026-11-19
 
 - Cap Vavoo candidate resolution and playback failover at eight attempts per

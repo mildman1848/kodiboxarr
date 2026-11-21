@@ -1,6 +1,6 @@
 {
   "name": "Kodiboxarr",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Kodibox TV / Vavoo source support for Dispatcharr. Watches Kodibox builds, imports playlist and EPG metadata, and prepares runtime-resolved stream placeholders.",
   "author": "Mildman1848",
   "license": "AGPL-3.0-only",

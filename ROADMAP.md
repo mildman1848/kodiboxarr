@@ -52,14 +52,19 @@ Tracking: [#8](https://github.com/mildman1848/kodiboxarr/issues/8)
 
 Tracking: [#9](https://github.com/mildman1848/kodiboxarr/issues/9)
 
-- Let a user link multiple ordered provider streams to one existing Dispatcharr
-  Channel (for example, one RTL Channel with KodiboxTV, VavooTV, and StalkerTV
-  alternatives).
-- Never create duplicate Channels or alter EPG mappings during stream import.
-- Resolve a selected candidate using its provider identity and the Channel's
+- [x] Document the manual workflow: the user links multiple ordered provider
+  streams to one existing Dispatcharr Channel in the Dispatcharr UI (for example,
+  one RTL Channel with KodiboxTV, VavooTV, and StalkerTV alternatives).
+- [x] Regression-test (offline, fake models) that `assign_profile` fills only
+  empty linked-Channel profiles, keeps non-empty ones, and leaves
+  `ChannelStream` links and order untouched.
+- [x] Verify the regular stream-sync path never invokes the explicit Channel
+  creation planner; an offline regression test guards this boundary. EPG-data
+  mapping remains confined to the separate, explicit Channel-import action.
+- [ ] Resolve a selected candidate using its provider identity and the Channel's
   configured stream profile; Dispatcharr's live proxy owns ordered failover.
-- Preserve stable stream identity across refreshes and avoid duplicate links.
-- Test primary failure, alternate success, all-candidates-fail, and refresh
+- [ ] Preserve stable stream identity across refreshes and avoid duplicate links.
+- [ ] Runtime (unverified): test primary failure, alternate success, all-candidates-fail, and refresh
   idempotency against supported Dispatcharr behavior.
 
 ### 4. Resolver consolidation and hardening — In progress

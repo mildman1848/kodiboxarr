@@ -52,14 +52,14 @@ def parse_manifest(xml_text: str, manifest_url: str = "") -> BuildInfo:
     sometimes like this. Humanity survives somehow. We parse `<build>` blocks
     and their simple child tags with a narrow regex instead.
     """
-    blocks = re.findall(r"<build>(.*?)</build>", xml_text, flags=re.S | re.I)
+    blocks = re.findall(r"<build>(.*?)</build>", xml_text, flags=re.DOTALL | re.IGNORECASE)
     if not blocks:
         raise BuildSourceError("manifest does not contain a <build> entry")
 
     def values(block: str) -> dict[str, str]:
         result: dict[str, str] = {}
         for key in ("name", "version", "kodi", "url", "icon", "fanart"):
-            match = re.search(rf"<{key}>(.*?)</{key}>", block, flags=re.S | re.I)
+            match = re.search(rf"<{key}>(.*?)</{key}>", block, flags=re.DOTALL | re.IGNORECASE)
             result[key] = (match.group(1).strip() if match else "")
         return result
 
@@ -87,7 +87,7 @@ def addon_version(build_root: Path, addon_id: str = "plugin.video.kodiboxtv") ->
     if not addon_xml.exists():
         raise BuildSourceError(f"missing addon.xml for {addon_id}: {addon_xml}")
     text = addon_xml.read_text(encoding="utf-8", errors="replace")
-    match = re.search(r'id=["\']%s["\'].*?version=["\']([^"\']+)' % re.escape(addon_id), text, re.S)
+    match = re.search(rf'id=["\']{re.escape(addon_id)}["\'].*?version=["\']([^"\']+)', text, re.DOTALL)
     if not match:
         raise BuildSourceError(f"could not read version from {addon_xml}")
     return match.group(1)

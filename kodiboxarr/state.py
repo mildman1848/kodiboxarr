@@ -4,10 +4,10 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 
-def atomic_write_json(path: Path, payload: Dict[str, Any], mode: int = 0o600) -> Path:
+def atomic_write_json(path: Path, payload: dict[str, Any], mode: int = 0o600) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
@@ -26,7 +26,7 @@ def atomic_write_json(path: Path, payload: Dict[str, Any], mode: int = 0o600) ->
     return path
 
 
-def read_json(path: Path) -> Optional[Dict[str, Any]]:
+def read_json(path: Path) -> dict[str, Any] | None:
     try:
         with Path(path).open("r", encoding="utf-8") as handle:
             payload = json.load(handle)

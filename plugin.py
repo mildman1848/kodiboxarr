@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 try:
     from .kodiboxarr.build_source import DEFAULT_MANIFEST_URL, fetch_manifest, parse_manifest
@@ -32,7 +32,7 @@ class Plugin:
     fields = MANIFEST.get("fields", [])
     actions = MANIFEST.get("actions", [])
 
-    def run(self, action: str, params: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, action: str, params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         logger = context.get("logger") or logging.getLogger(__name__)
         settings = _merge_defaults(_settings_from_context_and_params(context, params))
         try:
@@ -41,7 +41,7 @@ class Plugin:
                     return {"status": "error", "message": "KodiboxTV Vavoo cache is not available; run Dry-run sync first."}
                 try:
                     return {"status": "ok", **preview_cache(VAVOO_CACHE_PATH)}
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001 - keep malformed-cache failures inside the action boundary.
                     logger.warning("kodiboxarr: Vavoo catalog preview failed (%s)", type(exc).__name__)
                     return {"status": "error", "message": "Could not read the KodiboxTV Vavoo cache."}
             if action == "check_build":
@@ -67,10 +67,10 @@ class Plugin:
             logger.exception("kodiboxarr: action failed")
             return {"status": "error", "message": f"{action} failed: {type(exc).__name__}: {exc}"}
 
-    def stop(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def stop(self, context: dict[str, Any]) -> dict[str, Any]:
         return {"status": "ok"}
 
-    def _check_build(self, settings: Dict[str, Any]) -> Dict[str, Any]:
+    def _check_build(self, settings: dict[str, Any]) -> dict[str, Any]:
         url = settings.get("manifest_url") or DEFAULT_MANIFEST_URL
         xml = fetch_manifest(url)
         build = parse_manifest(xml, manifest_url=url)
@@ -80,11 +80,17 @@ class Plugin:
             "build": build.to_dict(),
         }
 
-    def _assign_profile(self, logger) -> Dict[str, Any]:
+    def _assign_profile(self, logger) -> dict[str, Any]:
         try:
-            from .kodiboxarr.sync import assign_stream_profile_to_account_streams, assign_stream_profile_to_linked_channels
+            from .kodiboxarr.sync import (
+                assign_stream_profile_to_account_streams,
+                assign_stream_profile_to_linked_channels,
+            )
         except ImportError:  # Standalone test import, outside Dispatcharr's package loader.
-            from kodiboxarr.sync import assign_stream_profile_to_account_streams, assign_stream_profile_to_linked_channels
+            from kodiboxarr.sync import (
+                assign_stream_profile_to_account_streams,
+                assign_stream_profile_to_linked_channels,
+            )
 
         profile, created, stream_count, changed = assign_stream_profile_to_account_streams()
         _, _, linked_channel_count, channel_changed, channel_profiled_count = assign_stream_profile_to_linked_channels()
@@ -100,7 +106,7 @@ class Plugin:
         }
 
 
-def _settings_from_context_and_params(context: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+def _settings_from_context_and_params(context: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
     """Merge persisted plugin settings with explicit run-time overrides."""
     merged = dict(context.get("settings") or {})
     params = params or {}
@@ -113,7 +119,7 @@ def _settings_from_context_and_params(context: Dict[str, Any], params: Dict[str,
     return merged
 
 
-def _merge_defaults(settings: Dict[str, Any]) -> Dict[str, Any]:
+def _merge_defaults(settings: dict[str, Any]) -> dict[str, Any]:
     merged = dict(settings)
     for field in MANIFEST.get("fields", []):
         if "id" in field and "default" in field and field["id"] not in merged:

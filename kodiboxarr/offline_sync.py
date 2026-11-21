@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from .diff import safety_gate, snapshot_diff
 from .playlist import parse_m3u_file, render_dispatcharr_m3u
@@ -9,7 +9,7 @@ from .snapshot import build_snapshot
 from .state import atomic_write_json, read_json
 
 
-def dry_run_from_extracted_build(build_root: Path, build_zip: Path, manifest_xml: str, output_dir: Path, manifest_url: str = "", max_removed_percent: int = 30) -> Dict[str, Any]:
+def dry_run_from_extracted_build(build_root: Path, build_zip: Path, manifest_xml: str, output_dir: Path, manifest_url: str = "", max_removed_percent: int = 30) -> dict[str, Any]:
     output_dir = Path(output_dir)
     snapshot = build_snapshot(build_root, build_zip, manifest_xml, manifest_url=manifest_url)
     current = snapshot.to_dict()

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 
-def snapshot_diff(previous: Dict[str, Any] | None, current: Dict[str, Any]) -> Dict[str, Any]:
+def snapshot_diff(previous: dict[str, Any] | None, current: dict[str, Any]) -> dict[str, Any]:
     if not previous:
         return {"first_run": True, "added": current.get("channel_count", 0), "removed": 0, "changed": [], "safe": True, "warnings": []}
     prev_ids = set(previous.get("channel_identities") or [])
@@ -28,7 +28,7 @@ def snapshot_diff(previous: Dict[str, Any] | None, current: Dict[str, Any]) -> D
     return {"first_run": False, "added": len(added), "removed": len(removed), "removed_percent": removed_percent, "changed": changed, "safe": not warnings, "warnings": warnings, "added_sample": added[:20], "removed_sample": removed[:20]}
 
 
-def safety_gate(diff: Dict[str, Any], max_removed_percent: int = 30) -> Dict[str, Any]:
+def safety_gate(diff: dict[str, Any], max_removed_percent: int = 30) -> dict[str, Any]:
     warnings = list(diff.get("warnings") or [])
     if not diff.get("first_run") and float(diff.get("removed_percent") or 0) > max_removed_percent:
         warnings.append(f"removed channel percentage exceeds limit: {diff.get('removed_percent')}% > {max_removed_percent}%")

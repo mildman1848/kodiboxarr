@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -16,7 +16,7 @@ class BuildInfo:
     fanart: str = ""
     manifest_url: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -26,7 +26,7 @@ class PlaylistEntry:
 
     name: str
     url: str
-    attrs: Dict[str, str] = field(default_factory=dict)
+    attrs: dict[str, str] = field(default_factory=dict)
     kodibox_name: str = ""
     source: str = ""
     variant: int = 0  # ordinal of this distinct source among entries sharing one service identity
@@ -51,7 +51,7 @@ class PlaylistEntry:
     def tvg_name(self) -> str:
         return self.attrs.get("tvg-name", "")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -62,7 +62,7 @@ class EpgInfo:
     url: str
     ignore_case_channel_ids: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -77,9 +77,9 @@ class Snapshot:
     channel_count: int
     mapped_tvg_id_count: int
     epg: EpgInfo
-    channel_identities: List[str]
+    channel_identities: list[str]
     vavoo_cache_hash: str = ""
     vavoo_raw_channels: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)

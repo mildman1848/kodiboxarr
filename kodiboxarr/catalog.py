@@ -10,7 +10,8 @@ from __future__ import annotations
 import hashlib
 import re
 from collections import defaultdict
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from .models import PlaylistEntry
 from .vavoo_cache import read_cache
@@ -32,10 +33,10 @@ def records_from_cache(payload: Any) -> list[Any]:
     group because the source format has no channel ID.
     """
     if not isinstance(payload, dict) or not isinstance(payload.get("value"), dict):
-        raise ValueError("unexpected KodiboxTV Vavoo cache envelope")
+        raise TypeError("unexpected KodiboxTV Vavoo cache envelope")
     channels = payload["value"].get("channels")
     if not isinstance(channels, list):
-        raise ValueError("KodiboxTV Vavoo cache has no channels list")
+        raise TypeError("KodiboxTV Vavoo cache has no channels list")
     records: list[Any] = []
     for item in channels:
         if not isinstance(item, dict):

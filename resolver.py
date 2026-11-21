@@ -113,7 +113,7 @@ def load_vavoo_cache(path: Path = CACHE_PATH) -> dict[str, list[str]]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     value = raw.get("value") if isinstance(raw, dict) else raw
     if not isinstance(value, dict):
-        raise ValueError(f"unexpected Vavoo cache format in {path}")
+        raise TypeError(f"unexpected Vavoo cache format in {path}")
     out: dict[str, list[str]] = {}
     for name, urls in value.items():
         if not isinstance(name, str) or not isinstance(urls, list):
@@ -147,7 +147,7 @@ def load_kodiboxtv_vavoo_candidates(payload: dict, path: Path | None = None) -> 
     value = cache.get("value")
     channels = value.get("channels") if isinstance(value, dict) else None
     if not isinstance(channels, list):
-        raise ValueError("KodiboxTV Vavoo cache has no channels list")
+        raise TypeError("KodiboxTV Vavoo cache has no channels list")
 
     matches: list[str] = []
     wanted = (_catalog_key(group), _catalog_key(name))
@@ -201,7 +201,7 @@ def list_vavoo_candidates(payload: dict, cache: dict[str, list[str]] | None = No
     for name in candidate_names(payload):
         variants = [name, name.upper(), name.replace(" TV", ".TV"), name.replace("-", ".")]
         for variant in variants:
-            if variant in cache and cache[variant]:
+            if cache.get(variant):
                 bucket = exact if variant == name or variant == name.upper() else fallback
                 for url in cache[variant]:
                     if url not in bucket:
@@ -246,7 +246,7 @@ def _decode_auth_signature(signature: str) -> dict | None:
         if isinstance(payload, str):
             payload = json.loads(payload)
         return payload if isinstance(payload, dict) else None
-    except Exception:
+    except Exception:  # noqa: BLE001 - malformed untrusted signature payloads are a cache miss.
         return None
 
 
@@ -306,8 +306,8 @@ def get_auth_signature() -> str:
         if valid_until:
             log(f"using cached MediaHubMX signature, valid for {int((valid_until - time.time() * 1000) / 1000)}s")
             return sig
-    except Exception:
-        pass
+    except (OSError, ValueError, AttributeError, TypeError):
+        log("cached MediaHubMX signature is unreadable; requesting a fresh signature")
 
     response = requests.post(
         "https://www.vypn.net/api/app/ping",
@@ -390,7 +390,7 @@ def _safe_failure_category(exc: Exception) -> str:
         return "tls-verification"
     if "connection" in name or isinstance(exc, OSError):
         return "network"
-    if "json" in name or isinstance(exc, ValueError):
+    if "json" in name or isinstance(exc, (TypeError, ValueError)):
         return "malformed-response"
     if isinstance(exc, RuntimeError):
         return "resolver-or-probe-failure"
@@ -520,8 +520,8 @@ def stream_resolved_url(url: str, user_agent: str) -> tuple[int, int, str]:
     except BrokenPipeError:
         try:
             process.terminate()
-        except Exception:
-            pass
+        except OSError as exc:
+            log(f"ffmpeg termination after client disconnect failed: {type(exc).__name__}")
         return 0, written, "client_disconnected"
 
 
@@ -583,7 +583,7 @@ def main(argv: list[str]) -> int:
             print(resolve_pseudo_url(url))
             return 0
         return passthrough_vavoo_payload(payload, user_agent)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - top-level CLI boundary; log only the type to avoid leaking signed URLs.
         log(f"resolve failed: {type(exc).__name__}")
         return 1
 
